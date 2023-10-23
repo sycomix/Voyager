@@ -25,14 +25,14 @@ def _read_install_requires():
 
 def _fill_extras(extras):
     if extras:
-        extras["all"] = list(set([item for group in extras.values() for item in group]))
+        extras["all"] = list({item for group in extras.values() for item in group})
     return extras
 
 
 setup(
     name=PKG_NAME,
     version=VERSION,
-    author=f"MineDojo Team",
+    author="MineDojo Team",
     url="https://github.com/MineDojo/Voyager",
     description="research project",
     long_description=_read_file("README.md"),

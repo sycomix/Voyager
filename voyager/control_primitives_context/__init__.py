@@ -11,8 +11,9 @@ def load_control_primitives_context(primitive_names=None):
             for primitive in os.listdir(f"{package_path}/control_primitives_context")
             if primitive.endswith(".js")
         ]
-    primitives = [
-        U.load_text(f"{package_path}/control_primitives_context/{primitive_name}.js")
+    return [
+        U.load_text(
+            f"{package_path}/control_primitives_context/{primitive_name}.js"
+        )
         for primitive_name in primitive_names
     ]
-    return primitives

@@ -21,8 +21,7 @@ class CriticAgent:
         self.mode = mode
 
     def render_system_message(self):
-        system_message = SystemMessage(content=load_prompt("critic"))
-        return system_message
+        return SystemMessage(content=load_prompt("critic"))
 
     def render_human_message(self, *, events, task, context, chest_observation):
         assert events[-1][0] == "observe", "Last event must be observe"
@@ -36,7 +35,7 @@ class CriticAgent:
         inventory_used = events[-1][1]["status"]["inventoryUsed"]
         inventory = events[-1][1]["inventory"]
 
-        for i, (event_type, event) in enumerate(events):
+        for event_type, event in events:
             if event_type == "onError":
                 print(f"\033[31mCritic Agent: Error occurs {event['onError']}\033[0m")
                 return None
@@ -68,11 +67,7 @@ class CriticAgent:
 
         observation += f"Task: {task}\n\n"
 
-        if context:
-            observation += f"Context: {context}\n\n"
-        else:
-            observation += f"Context: None\n\n"
-
+        observation += f"Context: {context}\n\n" if context else f"Context: None\n\n"
         print(f"\033[31m****Critic Agent human message****\n{observation}\033[0m")
         return HumanMessage(content=observation)
 

@@ -188,7 +188,7 @@ class CurriculumAgent:
                 if self._core_inv_items_regex.search(k) is not None
             }
 
-        observation = {
+        return {
             "context": "",
             "biome": f"Biome: {biome}\n\n",
             "time": f"Time: {time_of_day}\n\n",
@@ -204,7 +204,6 @@ class CurriculumAgent:
             "completed_tasks": f"Completed tasks so far: {completed_tasks}\n\n",
             "failed_tasks": f"Failed tasks that are too hard: {failed_tasks}\n\n",
         }
-        return observation
 
     def render_human_message(self, *, events, chest_observation):
         content = ""
@@ -227,10 +226,7 @@ class CurriculumAgent:
 
         for key in self.curriculum_observations:
             if self.progress >= self.warm_up[key]:
-                if self.warm_up[key] != 0:
-                    should_include = random.random() < 0.8
-                else:
-                    should_include = True
+                should_include = random.random() < 0.8 if self.warm_up[key] != 0 else True
                 if should_include:
                     content += observation[key]
 
@@ -250,7 +246,7 @@ class CurriculumAgent:
                 chests = chest_observation[8:-2].split("\n")
                 for chest in chests:
                     content = chest.split(":")[1]
-                    if content == " Unknown items inside" or content == " Empty":
+                    if content in [" Unknown items inside", " Empty"]:
                         position = chest.split(":")[0]
                         task = f"Deposit useless items into the chest at {position}"
                         context = (
@@ -266,10 +262,7 @@ class CurriculumAgent:
                         return task, context
             if "chest" in events[-1][1]["inventory"]:
                 task = "Place a chest"
-                context = (
-                    f"You have a chest in inventory, place it around you. "
-                    f"If chests is not None, or nearby blocks contains chest, this task is success."
-                )
+                context = 'You have a chest in inventory, place it around you. If chests is not None, or nearby blocks contains chest, this task is success.'
             else:
                 task = "Craft 1 chest"
                 context = "Craft 1 chest with 8 planks of any kind of wood."
@@ -430,8 +423,7 @@ class CurriculumAgent:
             )
             U.dump_json(self.qa_cache, f"{self.ckpt_dir}/curriculum/qa_cache.json")
             self.qa_cache_questions_vectordb.persist()
-        context = f"Question: {question}\n{answer}"
-        return context
+        return f"Question: {question}\n{answer}"
 
     def render_system_message_qa_step1_ask_questions(self):
         return SystemMessage(content=load_prompt("curriculum_qa_step1_ask_questions"))
@@ -440,9 +432,7 @@ class CurriculumAgent:
         observation = self.render_observation(
             events=events, chest_observation=chest_observation
         )
-        content = ""
-        for key in self.curriculum_observations:
-            content += observation[key]
+        content = "".join(observation[key] for key in self.curriculum_observations)
         return HumanMessage(content=content)
 
     def run_qa_step1_ask_questions(self, *, events, chest_observation):

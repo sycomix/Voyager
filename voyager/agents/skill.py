@@ -51,9 +51,9 @@ class SkillManager:
 
     @property
     def programs(self):
-        programs = ""
-        for skill_name, entry in self.skills.items():
-            programs += f"{entry['code']}\n\n"
+        programs = "".join(
+            f"{entry['code']}\n\n" for skill_name, entry in self.skills.items()
+        )
         for primitives in self.control_primitives:
             programs += f"{primitives}\n\n"
         return programs
@@ -121,7 +121,6 @@ class SkillManager:
             f"\033[33mSkill Manager retrieved skills: "
             f"{', '.join([doc.metadata['name'] for doc, _ in docs_and_scores])}\033[0m"
         )
-        skills = []
-        for doc, _ in docs_and_scores:
-            skills.append(self.skills[doc.metadata["name"]]["code"])
-        return skills
+        return [
+            self.skills[doc.metadata["name"]]["code"] for doc, _ in docs_and_scores
+        ]

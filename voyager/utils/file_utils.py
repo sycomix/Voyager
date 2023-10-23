@@ -67,10 +67,7 @@ def pack_varargs(args):
         # arg_list is now packed as a list
     """
     assert isinstance(args, tuple), "please input the tuple `args` as in *args"
-    if len(args) == 1 and is_sequence(args[0]):
-        return args[0]
-    else:
-        return args
+    return args[0] if len(args) == 1 and is_sequence(args[0]) else args
 
 
 def f_not_empty(*fpaths):
@@ -147,10 +144,7 @@ def f_listdir(
         files = [f for f in files if f.endswith(filter_ext)]
     if sort:
         files.sort()
-    if full_path:
-        return [os.path.join(dir_path, f) for f in files]
-    else:
-        return files
+    return [os.path.join(dir_path, f) for f in files] if full_path else files
 
 
 def f_mkdir(*fpaths):
@@ -207,11 +201,8 @@ def f_add_ext(fpath, ext):
       ext: will add a preceding `.` if doesn't exist
     """
     if not ext.startswith("."):
-        ext = "." + ext
-    if fpath.endswith(ext):
-        return fpath
-    else:
-        return fpath + ext
+        ext = f".{ext}"
+    return fpath if fpath.endswith(ext) else fpath + ext
 
 
 def f_has_ext(fpath, ext):
@@ -277,11 +268,7 @@ def _f_copytree(
     Use f_copytree as entry
     """
     names = os.listdir(src)
-    if ignore is not None:
-        ignored_names = ignore(src, names)
-    else:
-        ignored_names = set()
-
+    ignored_names = ignore(src, names) if ignore is not None else set()
     os.makedirs(dst, exist_ok=exist_ok)
     errors = []
     for name in names:
@@ -342,14 +329,16 @@ def _include_patterns(*patterns):
     """
 
     def _ignore_patterns(path, names):
-        keep = set(
-            name for pattern in patterns for name in fnmatch.filter(names, pattern)
-        )
-        ignore = set(
+        keep = {
+            name
+            for pattern in patterns
+            for name in fnmatch.filter(names, pattern)
+        }
+        ignore = {
             name
             for name in names
             if name not in keep and not os.path.isdir(os.path.join(path, name))
-        )
+        }
         return ignore
 
     return _ignore_patterns
@@ -462,7 +451,7 @@ def create_tar(fsrc, output_tarball, include=None, ignore=None, compress_mode="g
         f_copy(fsrc, tempdest, include=include, ignore=ignore)
         fsrc = tempdest
 
-    with tarfile.open(output_tarball, "w:" + compress_mode) as tar:
+    with tarfile.open(output_tarball, f"w:{compress_mode}") as tar:
         tar.add(fsrc, arcname=src_base)
 
     if tempdir:
@@ -536,10 +525,7 @@ def dump_pickle(data, *fpaths):
 
 def load_text(*fpaths, by_lines=False):
     with open(f_join(*fpaths), "r") as fp:
-        if by_lines:
-            return fp.readlines()
-        else:
-            return fp.read()
+        return fp.readlines() if by_lines else fp.read()
 
 
 def load_text_lines(*fpaths):

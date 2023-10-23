@@ -47,17 +47,17 @@ class ActionAgent:
                         f"\033[32mAction Agent removing chest {position}: {chest}\033[0m"
                     )
                     self.chest_memory.pop(position)
-            else:
-                if chest != "Invalid":
-                    print(f"\033[32mAction Agent saving chest {position}: {chest}\033[0m")
-                    self.chest_memory[position] = chest
+            elif chest != "Invalid":
+                print(f"\033[32mAction Agent saving chest {position}: {chest}\033[0m")
+                self.chest_memory[position] = chest
         U.dump_json(self.chest_memory, f"{self.ckpt_dir}/action/chest_memory.json")
 
     def render_chest_observation(self):
-        chests = []
-        for chest_position, chest in self.chest_memory.items():
-            if isinstance(chest, dict) and len(chest) > 0:
-                chests.append(f"{chest_position}: {chest}")
+        chests = [
+            f"{chest_position}: {chest}"
+            for chest_position, chest in self.chest_memory.items()
+            if isinstance(chest, dict) and len(chest) > 0
+        ]
         for chest_position, chest in self.chest_memory.items():
             if isinstance(chest, dict) and len(chest) == 0:
                 chests.append(f"{chest_position}: Empty")
@@ -83,7 +83,7 @@ class ActionAgent:
             "smeltItem",
             "killMob",
         ]
-        if not self.llm.model_name == "gpt-3.5-turbo":
+        if self.llm.model_name != "gpt-3.5-turbo":
             base_skills += [
                 "useChest",
                 "mineflayer",
@@ -102,19 +102,13 @@ class ActionAgent:
     def render_human_message(
         self, *, events, code="", task="", context="", critique=""
     ):
-        chat_messages = []
         error_messages = []
         # FIXME: damage_messages is not used
         damage_messages = []
         assert events[-1][0] == "observe", "Last event must be observe"
+        chat_messages = []
         for i, (event_type, event) in enumerate(events):
-            if event_type == "onChat":
-                chat_messages.append(event["onChat"])
-            elif event_type == "onError":
-                error_messages.append(event["onError"])
-            elif event_type == "onDamage":
-                damage_messages.append(event["onDamage"])
-            elif event_type == "observe":
+            if event_type == "observe":
                 biome = event["status"]["biome"]
                 time_of_day = event["status"]["timeOfDay"]
                 voxels = event["voxels"]
@@ -127,6 +121,12 @@ class ActionAgent:
                 inventory = event["inventory"]
                 assert i == len(events) - 1, "observe must be the last event"
 
+            elif event_type == "onChat":
+                chat_messages.append(event["onChat"])
+            elif event_type == "onDamage":
+                damage_messages.append(event["onDamage"])
+            elif event_type == "onError":
+                error_messages.append(event["onError"])
         observation = ""
 
         if code:
@@ -178,19 +178,15 @@ class ActionAgent:
         else:
             observation += f"Inventory ({inventory_used}/36): Empty\n\n"
 
-        if not (
-            task == "Place and deposit useless items into a chest"
-            or task.startswith("Deposit useless items into the chest at")
+        if (
+            task != "Place and deposit useless items into a chest"
+            and not task.startswith("Deposit useless items into the chest at")
         ):
             observation += self.render_chest_observation()
 
         observation += f"Task: {task}\n\n"
 
-        if context:
-            observation += f"Context: {context}\n\n"
-        else:
-            observation += f"Context: None\n\n"
-
+        observation += f"Context: {context}\n\n" if context else f"Context: None\n\n"
         if critique:
             observation += f"Critique: {critique}\n\n"
         else:
@@ -212,7 +208,7 @@ class ActionAgent:
                 code = "\n".join(code_pattern.findall(message.content))
                 parsed = babel.parse(code)
                 functions = []
-                assert len(list(parsed.program.body)) > 0, "No functions found"
+                assert list(parsed.program.body), "No functions found"
                 for i, node in enumerate(parsed.program.body):
                     if node.type != "FunctionDeclaration":
                         continue
@@ -229,12 +225,14 @@ class ActionAgent:
                             "params": list(node["params"]),
                         }
                     )
-                # find the last async function
-                main_function = None
-                for function in reversed(functions):
-                    if function["type"] == "AsyncFunctionDeclaration":
-                        main_function = function
-                        break
+                main_function = next(
+                    (
+                        function
+                        for function in reversed(functions)
+                        if function["type"] == "AsyncFunctionDeclaration"
+                    ),
+                    None,
+                )
                 assert (
                     main_function is not None
                 ), "No async function found. Your main function must be async."

@@ -149,7 +149,7 @@ class Voyager:
             retrieval_top_k=skill_manager_retrieval_top_k,
             request_timout=openai_api_request_timeout,
             ckpt_dir=skill_library_dir if skill_library_dir else ckpt_dir,
-            resume=True if resume or skill_library_dir else False,
+            resume=bool(resume or skill_library_dir),
         )
         self.recorder = U.EventRecorder(ckpt_dir=ckpt_dir, resume=resume)
         self.resume = resume
